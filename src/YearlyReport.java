@@ -2,16 +2,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class YearlyReport {
-    boolean isExpense;
-    double amount;
+    private boolean isExpense;
+    private double amount;
 
 
-    public YearlyReport(boolean is_Expense, double sum) {
-        isExpense = is_Expense;
-        amount = sum;
+    public YearlyReport(boolean isExpense, double amount) {
+        this.isExpense = isExpense;
+        this.amount = amount;
     }
 
-    public static void PrintReport(HashMap<Integer, ArrayList<YearlyReport>> fileContents){
+    public static void printReport(HashMap<Integer, ArrayList<YearlyReport>> fileContents){
         String month = "";
 
         ArrayList<YearlyReport> itemReport = new ArrayList<>();
@@ -22,7 +22,7 @@ public class YearlyReport {
         double averageIncome = 0;   //средний доход
 
         for(int numberMonth: fileContents.keySet()) {
-            month = Main.getMonth(numberMonth);
+            month = Month.getMonth(numberMonth);
 
             double profit = 0;          //прибыль
 

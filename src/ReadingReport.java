@@ -6,76 +6,80 @@ import java.util.HashMap;
 
 public class ReadingReport {
     public static String pathYearlyReport = "y.2021";
-    public static String directory = "resources";
     public static String pathMonthlyReport = "m.2021";
 
-    public static HashMap<Integer, ArrayList<MonthlyReport>> ReadingMonthlyReport() {
+    public static HashMap<Integer, ArrayList<OneMonthlyReport>> readingMonthlyReport(String directory) {
 
         String path = pathMonthlyReport; //путь к файлами
         String content = "";  //сюда прочитаю файл
         String filePath = ""; //переменная для полного пути к файл
-        HashMap<Integer, ArrayList<MonthlyReport>> monthlyReportHash = new HashMap<>(); //создаём хэш-таблицу, где ключ-месяц, значение - список объектов
+        HashMap<Integer, ArrayList<OneMonthlyReport>> monthlyReportHash = new HashMap<>(); //создаём хэш-таблицу, где ключ-месяц, значение - список объектов
+
         for (int i=1; i<4; i++) {
 
-            filePath = getPath(i, path);
+            filePath = getPath(i, path);                            //получить название файла с месяцем
+            content = readFileContentsOrNull(filePath, directory);  //получить содержимое файла
+            if (content != null) {                                  //если нам вернули содержимое файла, работаем дальше
+                String[] lines = content.split("\\n");        //разобрать на строки
+                ArrayList<OneMonthlyReport> monthlyReportList = new ArrayList<>(); //создать список трат/приходов для текущего месяца
 
-            content = readFileContentsOrNull(filePath);         //получили содержимое файла
-            String[] lines = content.split("\\n");        //разобрали на строки
-
-            int numberMonth = 0; //инициализация
-            boolean isExpense;
-            int quantity =0;
-            double sum = 0;
-            ArrayList<MonthlyReport> monthlyReportList = new ArrayList<>();
-
-            for (int k = 1; k < lines.length; k++) {
-                String[] lineContents = lines[k].split(",");  //разделила строку по запятым
-                String itemName = lineContents[0];                  //запомнила имя
-                numberMonth = i;                                    //месяц
-                isExpense = Boolean.parseBoolean(lineContents[1]);  //флажок расхода/прихода
-                quantity = Integer.parseInt(lineContents[2]) ;      //количество товара
-                sum = Double.parseDouble(lineContents[3]);          //суммма за единицу
-                monthlyReportList.add(new MonthlyReport(numberMonth,itemName, isExpense, quantity, sum)); //в списке создала новую запись
+                for (int k = 1; k < lines.length; k++) {
+                    String[] lineContents = lines[k].split(",");     //разделила строку по запятым
+                    monthlyReportList.add(getLineMonthlyReport(lineContents, i)); //добавить в список новую запись
+                }
+                monthlyReportHash.put(i, monthlyReportList);        //добавить в мэп новый отчет за новый месяц
             }
-            monthlyReportHash.put(i, monthlyReportList);
 
         }
         return monthlyReportHash; //readFileContentsOrNull(filePath);
     }
 
-    public static HashMap<Integer, ArrayList<YearlyReport>> ReadingYearlyReport() {
+    private static OneMonthlyReport getLineMonthlyReport(String[] line, int numberMonth){
+        String itemName = line[0];                          //запомнила имя
+        boolean isExpense = Boolean.parseBoolean(line[1]);  //флажок расхода/прихода
+        int quantity = Integer.parseInt(line[2]) ;          //количество товара
+        double sum = Double.parseDouble(line[3]);           //суммма за единицу
+        return new OneMonthlyReport(numberMonth,itemName, isExpense, quantity, sum); //вернём готовенький объект
+      }
+
+    public static HashMap<Integer, ArrayList<YearlyReport>> readingYearlyReport(String directory) {
         String path = pathYearlyReport;
         String content = "";  //сюда прочитаю файл
         HashMap<Integer, ArrayList<YearlyReport>> yearlyReportHash = new HashMap<>(); //создаём хэш-таблицу, где ключ-месяц, значение - список объектов
 
-        content = readFileContentsOrNull(path);             //получили содержимое файла
+        content = readFileContentsOrNull(path,directory);             //получили содержимое файла
         String[] lines = content.split("\\n");        //разобрали на строки
-
-        int month = 0; //инициализация
-        boolean isExpense;
-        double amount = 0;
 
         for (int k = 1; k < lines.length; k++) {
             String[] lineContents = lines[k].split(",");  //разделила строку по запятым
-            month = Integer.parseInt(lineContents[0]) ;         //месяц
-            amount = Integer.parseInt(lineContents[1]) ;        //количество товара
-            isExpense = Boolean.parseBoolean(lineContents[2]);  //флажок расхода/прихода
-            ArrayList<YearlyReport> yearlyReportList = new ArrayList<>();
-            if (yearlyReportHash.containsKey(month)) {          //если хэш-таблица содержит данные по месяцу
-                yearlyReportList = yearlyReportHash.get(month); //получаем список, добавляем в него новую запись
-                yearlyReportList.add(new YearlyReport(isExpense, amount)); //в списке создала новую запись
-            } else {                                            //если данных о месяце еще нет
-                yearlyReportList.add(new YearlyReport(isExpense, amount)); //в списке создала новую запись
-                yearlyReportHash.put(month, yearlyReportList);
-            }
-
+            addLineYearlyReport(lineContents, yearlyReportHash);
         }
 
         return yearlyReportHash;
     }
 
-    private static String readFileContentsOrNull(String path)
-    {
+    private static void addLineYearlyReport(String[] line, HashMap<Integer, ArrayList<YearlyReport>> yearlyReportHash) {
+
+        int month = Integer.parseInt(line[0]) ;         //получим месяц
+
+        ArrayList<YearlyReport> yearlyReportList = new ArrayList<>();
+        if (yearlyReportHash.containsKey(month)) {          //если хэш-таблица содержит данные по месяцу
+            yearlyReportList = yearlyReportHash.get(month); //получаем список, добавляем в него новую запись
+            yearlyReportList.add(getLineYearlyReport(line));//в списке создала новую запись
+        } else {                                            //если данных о месяце еще нет
+            yearlyReportList.add(getLineYearlyReport(line));//в списке создала новую запись
+            yearlyReportHash.put(month, yearlyReportList);
+        }
+    }
+
+    private static YearlyReport getLineYearlyReport(String[] line){
+        int amount = Integer.parseInt(line[1]) ;        //количество товара
+        boolean isExpense = Boolean.parseBoolean(line[2]);  //флажок расхода/прихода
+        return new YearlyReport(isExpense, amount);
+
+    }
+
+    private static String readFileContentsOrNull(String path, String directory) {
         try {
             return Files.readString(Path.of(directory, path + ".csv"));
         } catch (IOException e) {
